@@ -14,11 +14,9 @@ func readCount() int {
 }
 
 func TestConnectDB(t *testing.T) {
-	store := NewSQLiteStore(filepath.Join(t.TempDir(), fmt.Sprintf("db-%v", readCount())))
+	_, err := NewSQLiteStore(filepath.Join(t.TempDir(), fmt.Sprintf("db-%v", readCount())))
 	
-	if err := store.db.Ping(); err != nil {
-		t.Errorf("Error connecting to database: %v", err)
+	if err != nil {
+		t.Errorf("Error during database setup: %v", err)
 	}
-
-
 }

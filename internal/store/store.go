@@ -9,11 +9,21 @@ type SQLiteStore struct {
 	db *sql.DB
 }
 
-func NewSQLiteStore(filename string) *SQLiteStore {
-	//s := &SQLiteStore{}
-	//s.db, err := sql.Open("sqlite3", filename)
+func NewSQLiteStore(filename string) (*SQLiteStore, error) {
+	var err error
+	s := &SQLiteStore{}
+
+	s.db, err = sql.Open("sqlite", filename)
 	
-	return nil	
+	if err != nil {
+		return nil, err
+	}
+	
+	if err := s.db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return s, err	
 }
 
 func (s *SQLiteStore) CreateTag(name string) error {

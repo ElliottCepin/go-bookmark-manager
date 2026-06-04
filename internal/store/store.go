@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	_ "modernc.org/sqlite"
+	"github.com/ElliottCepin/go-bookmark-manager/internal/domain"
 )
 
 type SQLiteStore struct {
@@ -26,7 +27,7 @@ func NewSQLiteStore(filename string) (*SQLiteStore, error) {
 	return s, err	
 }
 
-func (s *SQLiteStore) CreateTag(name string) error {
+func (s *SQLiteStore) CreateTag(name string) (int, error) {
 	return nil	
 }
 
@@ -34,7 +35,7 @@ func (s *SQLiteStore) createBookmarkTag(tagId int, bookmarkId int) error {
 	return nil
 }
 
-func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) error {
+func (s *SQLiteStore) CreateBookmark(b *Bookmark) error {
 	return nil
 }
 
@@ -46,3 +47,6 @@ func (s *SQLiteStore) FilterByBookmarkTag(tagId int) error {
 	return nil
 }
 
+func (s *SQLiteStore) GetBookmark(bookmarkId int) (string, []string, error) {
+	return nil
+}

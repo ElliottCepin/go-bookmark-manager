@@ -20,6 +20,7 @@ func TestConnectDB(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error during database setup: %v", err)
 	}
+
 }
 
 func TestRoundTrip(t *testing.T) {
@@ -38,7 +39,7 @@ func TestRoundTrip(t *testing.T) {
 	bm2, err := s.GetBookmark(bm.Id)
 
 	if (err != nil) {
-		t.Errorf("Error retrieving Bookmark")
+		t.Errorf("Error retrieving Bookmark: %v", err)
 	}
 
 	if (bm2.Id != bm.Id) {

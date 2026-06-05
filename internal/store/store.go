@@ -4,6 +4,10 @@ import (
 	"database/sql"
 	_ "modernc.org/sqlite"
 	"github.com/ElliottCepin/go-bookmark-manager/internal/domain"
+	"slices"
+	"errors"
+	"time"
+	"fmt"
 )
 
 type SQLiteStore struct {
@@ -38,7 +42,6 @@ func NewSQLiteStore(filename string) (*SQLiteStore, error) {
 		url TEXT NOT NULL,
 		title TEXT,
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-
 	);`)
 
 	if (err != nil) {
@@ -47,7 +50,7 @@ func NewSQLiteStore(filename string) (*SQLiteStore, error) {
 	
 	_, err = s.db.Exec(`CREATE TABLE IF NOT EXISTS tags (
 		id INTEGER PRIMARY KEY,
-		name UNIQUE TEXT NOT NULL
+		name TEXT UNIQUE NOT NULL
 	);`)
 
 	if (err != nil) {
@@ -56,7 +59,7 @@ func NewSQLiteStore(filename string) (*SQLiteStore, error) {
 
 	_, err = s.db.Exec(`CREATE TABLE IF NOT EXISTS bookmark_tags (
 		bm_id INTEGER NOT NULL,
-		tag_id INTEGER NOT NULL
+		tag_id INTEGER NOT NULL,
 		PRIMARY KEY (bm_id, tag_id)
 	);`)
 
@@ -67,39 +70,59 @@ func NewSQLiteStore(filename string) (*SQLiteStore, error) {
 	return s, err	
 }
 
-func (s *SQLiteStore) CreateTag(name string) (int, error) {
-	return -1, nil
+func (s *SQLiteStore) CreateTag(name string) (int64, error) {
+	r, err := s.db.Exec("INSERT INTO tags (name) VALUES (?);", name)
+	
+	if (err != nil) {
+		return -1, err
+	}
+
+	id, err := r.LastInsertId()	
+
+	if (err != nil) {
+		return -1, err
+	}
+
+	return id, nil
 }
 
-func (s *SQLiteStore) createBookmarkTag(tagId int, bookmarkId int) error {
-	return nil
+func (s *SQLiteStore) createBookmarkTag(bmId int64, tagId int64) error {
+	_, err := s.db.Exec("INSERT INTO bookmark_tags (bm_id, tag_id) VALUES (?, ?)", bmId, tagId)
+	return err
 }
 
 func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) (*domain.Bookmark, error) {
 	// check that tag exists then create tag
-	tagIds := make([]int)
-	tagNames := make([]string)
+	tagIds := make([]int64, 0)
+	tagNames := make([]string, 0)
 
-	var id int
+	var id int64
 	var name string
 
 	for _, tag := range tags {
-		row := s.db.QueryRow("SELECT id, name FROM tags where name=(?)", tag)
+		row := s.db.QueryRow("SELECT id, name FROM tags WHERE name=(?)", tag)
 
 
 		err := row.Scan(&id, &name)
 
-		if (err != null) {
+		if (errors.Is(err, sql.ErrNoRows)) {
+			name = tag
+			id, err = s.CreateTag(name)
+
+			if (err != nil) {
+				return nil, err
+			}
+		} else if (err != nil) {
 			return nil, err
 		}
 		
 		
-		if (slices.contains(tagNames) {
+		if (slices.Contains(tagNames, tag)) {
 			return nil, errors.New("Tags violates unique constraint: too many tags")
 		}
 		
-		tagIds := append(tagIds, id)
-		tagNames := append(tagNames, name)
+		tagIds = append(tagIds, id)
+		tagNames = append(tagNames, name)
 	}
 
 	r, err := s.db.Exec("INSERT INTO bookmarks (url, title) VALUES (?, ?)", url, title)
@@ -108,14 +131,15 @@ func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) (*
 		return nil, err
 	}
 
-	id, err = r.LastInsertId()
+	bmid, err := r.LastInsertId()
 	
 	if (err != nil) {
 		return nil, err
 	}
 	
+	fmt.Printf("tagIds (create): %v", tagIds)
 	for _, tagId := range tagIds {
-		_, err := s.db.Exec("INSERT INTO bookmark_tags (bm_id, tag_id) VALUES (?, ?)", id, tagId)
+		err := s.createBookmarkTag(bmid, tagId)
 
 		if (err != nil) {
 			return nil, err
@@ -123,11 +147,11 @@ func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) (*
 	}
 
 	bm := &domain.Bookmark{
-		Id: id,
+		Id: bmid,
 		URL: url,
 		Title: title,
-		Tags: tagNames
-		Time: time.Now()
+		Tags: tagNames,
+		Time: time.Now(),
 	}
 
 	// finally, rewrite with hot queries
@@ -135,14 +159,77 @@ func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) (*
 	return bm, nil
 }
 
-func (s *SQLiteStore) DeleteBookmark(bookmarkId int) error {
+func (s *SQLiteStore) DeleteBookmark(bookmarkId int64) error {
 	return nil
 }
 
-func (s *SQLiteStore) FilterByBookmarkTag(tagId int) error {
+func (s *SQLiteStore) FilterByBookmarkTag(tagId int64) error {
 	return nil
 }
 
-func (s *SQLiteStore) GetBookmark(bookmarkId int) (*domain.Bookmark, error) {
-	return nil, nil
+func (s *SQLiteStore) GetBookmark(bookmarkId int64) (*domain.Bookmark, error) {
+	fmt.Printf("bmid: %v\n", bookmarkId)
+	row := s.db.QueryRow("SELECT * FROM bookmarks WHERE bookmarks.id=(?);", bookmarkId)
+
+	var id int64
+	var url string
+	var title string
+	var createdAt time.Time
+
+	err := row.Scan(&id, &url, &title, &createdAt)
+
+	if (err != nil) {
+		return nil, err
+	}
+
+	rows, err := s.db.Query("SELECT * FROM bookmark_tags WHERE bookmark_tags.bm_id=(?);", bookmarkId)
+	defer rows.Close()
+	
+
+	tagNames := make([]string, 0)
+	tagIds := make([]int64, 0)
+	var bmId int64
+	var tagId int64
+	var tagName string
+
+	for rows.Next() {
+		fmt.Print("This will go on forever ")
+
+		err = rows.Scan(&bmId, &tagId)
+
+		if err != nil {
+			return nil, err
+		}
+
+		tagIds = append(tagIds, tagId)
+	}
+	
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+
+	var nullInt int64
+
+	fmt.Printf("tagIds: %v\n", tagIds)
+	for _, tagId := range tagIds { 
+		row = s.db.QueryRow("SELECT id, name FROM tags WHERE id=(?)", tagId)
+
+		if err = row.Scan(&nullInt, &tagName); err != nil {
+			return nil, err
+		}
+
+		tagNames = append(tagNames, tagName)	
+	}
+
+	
+	bm := &domain.Bookmark{
+		Id: id,
+		URL: url,
+		Title: title,
+		Tags: tagNames,
+		Time: createdAt,
+	}
+
+	return bm, nil
 }

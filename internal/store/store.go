@@ -7,7 +7,6 @@ import (
 	"slices"
 	"errors"
 	"time"
-	"fmt"
 )
 
 type SQLiteStore struct {
@@ -137,7 +136,6 @@ func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) (*
 		return nil, err
 	}
 	
-	fmt.Printf("tagIds (create): %v", tagIds)
 	for _, tagId := range tagIds {
 		err := s.createBookmarkTag(bmid, tagId)
 
@@ -160,15 +158,28 @@ func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) (*
 }
 
 func (s *SQLiteStore) DeleteBookmark(bookmarkId int64) error {
+	_, err := s.db.Exec("DELETE FROM bookmarks where bookmarks.id=(?);", bookmarkId)
+	if (err != nil) {
+		return err
+	}
 	return nil
 }
 
-func (s *SQLiteStore) FilterByBookmarkTag(tagId int64) error {
-	return nil
+func (s *SQLiteStore) FilterByBookmarkTag(tagId int64) ([]*domain.Bookmark, error) {
+	// TODO BEFORE ANYTHING ELSE: WRITE TESTCASE PLEASE
+	// this would be so much better if I had join.
+	// rows, err := s.db.Query("SELECT * FROM bookmark_tags where bookmark_tags.tag_id=(?);", tagId)
+	
+	// loop through each row
+	// 	retrieve bm_id for the given row
+	// 	use s.GetBookmark(bm_id) to get the bookmark as an object
+	// 	return an array of pointers to bookmarks (update function signature)
+
+
+	return []*domain.Bookmark{}, nil
 }
 
 func (s *SQLiteStore) GetBookmark(bookmarkId int64) (*domain.Bookmark, error) {
-	fmt.Printf("bmid: %v\n", bookmarkId)
 	row := s.db.QueryRow("SELECT * FROM bookmarks WHERE bookmarks.id=(?);", bookmarkId)
 
 	var id int64
@@ -193,7 +204,6 @@ func (s *SQLiteStore) GetBookmark(bookmarkId int64) (*domain.Bookmark, error) {
 	var tagName string
 
 	for rows.Next() {
-		fmt.Print("This will go on forever ")
 
 		err = rows.Scan(&bmId, &tagId)
 
@@ -211,7 +221,6 @@ func (s *SQLiteStore) GetBookmark(bookmarkId int64) (*domain.Bookmark, error) {
 
 	var nullInt int64
 
-	fmt.Printf("tagIds: %v\n", tagIds)
 	for _, tagId := range tagIds { 
 		row = s.db.QueryRow("SELECT id, name FROM tags WHERE id=(?)", tagId)
 

@@ -59,3 +59,26 @@ func TestRoundTrip(t *testing.T) {
 	}
 	
 }
+
+func TestGetDeleted(t *testing.T) {
+		
+	s, err := NewSQLiteStore(filepath.Join(t.TempDir(), fmt.Sprintf("db-%v", readCount())))
+		
+	if (err != nil) {
+		t.Errorf("Error during database setup: %v", err)
+	}
+
+	bm, err := s.CreateBookmark("https://test.site/", "Test Bookmark", []string{"Test", "Bookmark"})
+
+	if (err != nil) {
+		t.Errorf("Error creating bookmark: %v", err)
+	}
+
+	s.DeleteBookmark(bm.Id)
+
+	bm2, err := s.GetBookmark(bm.Id)
+
+	if (err == nil) {
+		t.Errorf("Expected an error, got <nil>. returned: %v", bm2)
+	}
+}

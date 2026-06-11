@@ -165,7 +165,7 @@ func (s *SQLiteStore) DeleteBookmark(bookmarkId int64) error {
 	return nil
 }
 
-func (s *SQLiteStore) FilterByBookmarkTag(tagId int64) ([]*domain.Bookmark, error) {
+func (s *SQLiteStore) FilterByTag(tagName string) ([]*domain.Bookmark, error) {
 	// TODO BEFORE ANYTHING ELSE: WRITE TESTCASE PLEASE
 	// this would be so much better if I had join.
 	// rows, err := s.db.Query("SELECT * FROM bookmark_tags where bookmark_tags.tag_id=(?);", tagId)

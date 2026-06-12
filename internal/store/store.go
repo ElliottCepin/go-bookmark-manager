@@ -166,17 +166,40 @@ func (s *SQLiteStore) DeleteBookmark(bookmarkId int64) error {
 }
 
 func (s *SQLiteStore) FilterByTag(tagName string) ([]*domain.Bookmark, error) {
-	// TODO BEFORE ANYTHING ELSE: WRITE TESTCASE PLEASE
-	// this would be so much better if I had join.
-	// rows, err := s.db.Query("SELECT * FROM bookmark_tags where bookmark_tags.tag_id=(?);", tagId)
+	rows, err := s.db.Query("SELECT DISTINCT bm_id FROM bookmark_tags JOIN tags ON tags.name=(?) AND tags.id=bookmark_tags.tag_id;", tagName)
+
+	if (err != nil) {
+		return nil, err
+	}
 	
-	// loop through each row
-	// 	retrieve bm_id for the given row
-	// 	use s.GetBookmark(bm_id) to get the bookmark as an object
-	// 	return an array of pointers to bookmarks (update function signature)
+	var bm_id int64
+	
+	bm_ids := make([]int64, 0)
 
+	for rows.Next() {
+		err = rows.Scan(&bm_id)		
 
-	return []*domain.Bookmark{}, nil
+		if (err != nil) { 
+			return nil, err
+		}
+		
+		bm_ids = append(bm_ids, bm_id) // these are unique, so no error checking needed
+	}
+	
+
+	bms := make([]*domain.Bookmark, 0)
+
+	for _, bm := range bm_ids {
+		bmObj, err := s.GetBookmark(bm) // to get the bookmark as an object
+
+		if err != nil {
+			return nil, err
+		}
+
+		bms = append(bms, bmObj)
+	}
+
+	return bms, nil
 }
 
 func (s *SQLiteStore) GetBookmark(bookmarkId int64) (*domain.Bookmark, error) {

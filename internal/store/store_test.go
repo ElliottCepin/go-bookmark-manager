@@ -116,7 +116,7 @@ func TestFilterTag(t *testing.T) {
 		}
 
 		if (!compareBookmarkSlice(tests, hasTestTag[i])) {
-			t.Errorf("Expected '%v' filter to return %v, got %v instead", tags[i], hasTestTag, tests)
+			t.Errorf("Expected '%v' filter to return %v, got %v instead", tags[i], hasTestTag[i], tests)
 		}
 	}
 

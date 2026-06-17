@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"encoding/json"
+	"strconv"
 )
 
 type Store interface {
@@ -52,3 +53,40 @@ func (s *Server) createBookmark(w http.ResponseWriter, r *http.Request) {
 	_, err = s.store.CreateBookmark(bm.URL, bm.Title, bm.Tags)
 }	
 
+func (s *Server) filterBookmarks(w http.ResponseWriter, r *http.Request) {
+	if (r.Method != "GET") {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+
+	query := r.URL.Query()
+	
+	tags, ok := query["tag"]
+	if (!ok) {
+		// return empty json array
+		return
+	}
+
+	enc := json.NewEncoder(w)
+
+	err := enc.Encode(tags)
+
+	if (err != nil) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) deleteBookmark(w http.ResponseWriter, r *http.Request) {
+	// get slug from {slug}
+	sid := r.PathValue("id")
+	id, err := strconv.ParseInt(sid, 10, 64)  
+
+	if (err != nil) {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	err = s.store.DeleteBookmark(id)
+
+	if (err != nil) {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}

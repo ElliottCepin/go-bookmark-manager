@@ -29,7 +29,6 @@ func NewSQLiteStore(filename string) (*SQLiteStore, error) {
 		return nil, err
 	}
 	
-	// this seems silly since concurrency is safe
 	s.db.SetMaxOpenConns(1)
 	
 	if err := s.db.Ping(); err != nil {
@@ -85,7 +84,7 @@ func (s *SQLiteStore) CreateTag(name string) (int64, error) {
 	return id, nil
 }
 
-func (s *SQLiteStore) createBookmarkTag(bmId int64, tagId int64) error {
+func (s *SQLiteStore) CreateBookmarkTag(bmId int64, tagId int64) error {
 	_, err := s.db.Exec("INSERT INTO bookmark_tags (bm_id, tag_id) VALUES (?, ?)", bmId, tagId)
 	return err
 }
@@ -137,7 +136,7 @@ func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) (*
 	}
 	
 	for _, tagId := range tagIds {
-		err := s.createBookmarkTag(bmid, tagId)
+		err := s.CreateBookmarkTag(bmid, tagId)
 
 		if (err != nil) {
 			return nil, err
@@ -166,7 +165,7 @@ func (s *SQLiteStore) DeleteBookmark(bookmarkId int64) error {
 }
 
 func (s *SQLiteStore) FilterByTag(tagName string) ([]*domain.Bookmark, error) {
-	rows, err := s.db.Query("SELECT DISTINCT bm_id FROM bookmark_tags JOIN tags ON tags.name=(?) AND tags.id=bookmark_tags.tag_id;", tagName)
+	rows, err := s.db.Query("SELECT bm_id FROM bookmark_tags JOIN tags ON tags.name=(?) AND tags.id=bookmark_tags.tag_id;", tagName)
 
 	if (err != nil) {
 		return nil, err

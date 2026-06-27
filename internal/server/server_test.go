@@ -3,16 +3,16 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/ElliottCepin/go-bookmark-manager/internal/domain"
 	"github.com/ElliottCepin/go-bookmark-manager/internal/store"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"testing"
-	"strconv"
-	"fmt"
-	"io"
 	"slices"
+	"strconv"
+	"testing"
 )
 
 var dbcount int = 0
@@ -29,7 +29,7 @@ func equals(bm1 *domain.Bookmark, bm2 *domain.Bookmark) bool {
 func TestRoundTrip(t *testing.T) {
 	sqliteStore, err := store.NewSQLiteStore(databaseName())
 
-	if (err != nil) {
+	if err != nil {
 		t.Errorf("Error setting up store: %v", err)
 	}
 
@@ -60,8 +60,8 @@ func TestRoundTrip(t *testing.T) {
 		t.Errorf("Error during request: %v", err)
 	}
 
-	if (res.StatusCode == http.StatusBadRequest) {
-		t.Errorf("Bad request on POST /bookmarks")	
+	if res.StatusCode == http.StatusBadRequest {
+		t.Errorf("Bad request on POST /bookmarks")
 	}
 
 	body, err = io.ReadAll(res.Body)
@@ -72,26 +72,24 @@ func TestRoundTrip(t *testing.T) {
 
 	id, err := strconv.ParseInt(string(body), 10, 64)
 
-	if (err != nil) {
-		t.Errorf("Error parsing int: %v. Had %v, got %v", err, string(body), id)	
+	if err != nil {
+		t.Errorf("Error parsing int: %v. Had %v, got %v", err, string(body), id)
 	}
 
 	bm.Id = id
-	// turn body to int64 somehow
 
-
-	res, err = http.Get(server.URL+"/bookmarks/" + strconv.FormatInt(id, 10))
+	res, err = http.Get(server.URL + "/bookmarks/" + strconv.FormatInt(id, 10))
 
 	if err != nil {
 		t.Errorf("Error during request: %v", err)
 	}
 
-	if (res.StatusCode == http.StatusBadRequest) {
-		t.Errorf("Bad request on GET /bookmarks/%v", id)	
+	if res.StatusCode == http.StatusBadRequest {
+		t.Errorf("Bad request on GET /bookmarks/%v", id)
 	}
 
 	dec := json.NewDecoder(res.Body)
-	
+
 	var decodedBm domain.Bookmark
 	err = dec.Decode(&decodedBm)
 
@@ -99,9 +97,9 @@ func TestRoundTrip(t *testing.T) {
 		t.Errorf("Error decoding JSON body: %v", err)
 	}
 
-	if (!equals(&bm, &decodedBm)) {
-		t.Errorf("Bookmark %v:%v with %v not equal to Decoded Bookmark %v:%v with %v", 
+	if !equals(&bm, &decodedBm) {
+		t.Errorf("Bookmark %v:%v with %v not equal to Decoded Bookmark %v:%v with %v",
 			bm.Id, bm.URL, bm.Tags, decodedBm.Id, decodedBm.URL, decodedBm.Tags)
 	}
-}
 
+}

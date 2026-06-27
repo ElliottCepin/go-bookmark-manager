@@ -36,10 +36,12 @@ func NewServer(st Store, log *slog.Logger) *Server {
 func (s *Server) createBookmark(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
 
 	if !strings.Contains(r.Header.Get("Content-Type"), "application/json") {
 		w.WriteHeader(http.StatusUnsupportedMediaType)
+		return
 	}
 
 	dec := json.NewDecoder(r.Body)
@@ -49,6 +51,7 @@ func (s *Server) createBookmark(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	bmCopy, err := s.store.CreateBookmark(bm.URL, bm.Title, bm.Tags)
@@ -59,6 +62,7 @@ func (s *Server) createBookmark(w http.ResponseWriter, r *http.Request) {
 func (s *Server) filterBookmarks(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
 
 	query := r.URL.Query()
@@ -75,6 +79,7 @@ func (s *Server) filterBookmarks(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -85,12 +90,14 @@ func (s *Server) deleteBookmark(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	err = s.store.DeleteBookmark(id)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 }
 
@@ -101,12 +108,14 @@ func (s *Server) retrieveBookmark(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	bm, err := s.store.GetBookmark(id)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	enc := json.NewEncoder(w)
@@ -114,6 +123,7 @@ func (s *Server) retrieveBookmark(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 }
 

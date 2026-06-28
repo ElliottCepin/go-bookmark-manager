@@ -228,3 +228,83 @@ func TestFilter(t *testing.T) {
 
 	
 }
+
+func TestDelete(t *testing.T) {
+	sqliteStore, err := store.NewSQLiteStore(databaseName(t.TempDir()))
+
+	if err != nil {
+		t.Errorf("Error setting up store: %v", err)
+	}
+
+	srv := NewServer(sqliteStore, slog.Default())
+	server := httptest.NewServer(srv.Routes())
+
+	bm := domain.Bookmark{
+		URL:   "https://elliottcepin.dev",
+		Title: "Portfolio Site",
+		Tags: []string{
+			"epic",
+			"rat",
+			"cow",
+		},
+	}
+
+	body, err := json.Marshal(bm)
+
+	if err != nil {
+		t.Errorf("Error while marshalling: %v", err)
+	}
+
+	buf := bytes.NewBuffer(body)
+
+	res, err := http.Post(server.URL+"/bookmarks", "application/json", buf)
+
+	if err != nil {
+		t.Errorf("Error during request: %v", err)
+	}
+
+	if res.StatusCode == http.StatusBadRequest {
+		t.Errorf("Bad request on POST /bookmarks")
+	}
+
+	body, err = io.ReadAll(res.Body)
+
+	if err != nil {
+		t.Errorf("Error reading body: %v", err)
+	}
+
+	id, err := strconv.ParseInt(string(body), 10, 64)
+
+	if err != nil {
+		t.Errorf("Error parsing int: %v. Had %v, got %v", err, string(body), id)
+	}
+
+	bm.Id = id
+
+	req, err := http.NewRequest(
+		http.MethodDelete, server.URL+"/bookmarks/"+strconv.FormatInt(id, 10), nil)
+	
+	if err != nil {
+		t.Errorf("Error creating request: %v", err)
+	}
+
+	res, err = http.DefaultClient.Do(req)
+
+	if err != nil {
+		t.Errorf("Error sending request: %v", err)
+	}
+
+	if (res.StatusCode != http.StatusNoContent) {
+		t.Errorf("Expected code %v, got %v", http.StatusNoContent, res.StatusCode)
+	}
+
+	res, err = http.Get(server.URL + "/bookmarks/" + strconv.FormatInt(id, 10))
+
+	if err != nil {
+		t.Errorf("Error during request: %v", err)
+	}
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected Bad request on GET /bookmarks/%v, got %v", id, res.StatusCode)
+	}
+}

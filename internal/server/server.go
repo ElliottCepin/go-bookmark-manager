@@ -53,9 +53,10 @@ func (s *Server) createBookmark(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	
 
 	bmCopy, err := s.store.CreateBookmark(bm.URL, bm.Title, bm.Tags)
-	
+
 	fmt.Fprintf(w, "%v", bmCopy.Id)
 }
 
@@ -68,15 +69,12 @@ func (s *Server) filterBookmarks(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 
 	tag, ok := query["tag"]
-	fmt.Printf("%v\n", tag)
 	if !ok {
 		// return empty json array
 		return
 	}
 	
-	fmt.Printf("%v\n", tag[0])
 	bms, err := s.store.FilterByTag(tag[0])
-	fmt.Printf("%v\n", bms)
 	
 	if (err != nil) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -108,6 +106,8 @@ func (s *Server) deleteBookmark(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) retrieveBookmark(w http.ResponseWriter, r *http.Request) {

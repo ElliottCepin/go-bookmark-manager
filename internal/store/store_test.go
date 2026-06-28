@@ -82,6 +82,16 @@ func TestGetDeleted(t *testing.T) {
 	if (err == nil) {
 		t.Errorf("Expected an error, got <nil>. returned: %v", bm2)
 	}
+
+	rows, err := s.db.Query("SELECT bm_id FROM bookmark_tags where bm_id=(?)", bm.Id)
+
+	if err != nil {
+		t.Errorf("Error during query: %v", err)
+	}
+
+	if (rows.Next()) {
+		t.Errorf("A record exists in table bookmark_tags in column bm_id: %v", bm.Id)
+	}
 }
 
 func TestFilterTag(t *testing.T) {

@@ -157,7 +157,13 @@ func (s *SQLiteStore) CreateBookmark(url string, title string, tags []string) (*
 }
 
 func (s *SQLiteStore) DeleteBookmark(bookmarkId int64) error {
-	_, err := s.db.Exec("DELETE FROM bookmarks where bookmarks.id=(?);", bookmarkId)
+	_, err := s.db.Exec("DELETE FROM bookmark_tags where bookmark_tags.bm_id=(?);", bookmarkId)
+
+	if (err != nil) {
+		return err
+	}
+
+	_, err = s.db.Exec("DELETE FROM bookmarks where bookmarks.id=(?);", bookmarkId)
 	if (err != nil) {
 		return err
 	}

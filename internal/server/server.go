@@ -67,15 +67,24 @@ func (s *Server) filterBookmarks(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 
-	tags, ok := query["tag"]
+	tag, ok := query["tag"]
+	fmt.Printf("%v\n", tag)
 	if !ok {
 		// return empty json array
 		return
 	}
+	
+	fmt.Printf("%v\n", tag[0])
+	bms, err := s.store.FilterByTag(tag[0])
+	fmt.Printf("%v\n", bms)
+	
+	if (err != nil) {
+		w.WriteHeader(http.StatusBadRequest)
+	}
 
 	enc := json.NewEncoder(w)
 
-	err := enc.Encode(tags)
+	err = enc.Encode(bms)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
